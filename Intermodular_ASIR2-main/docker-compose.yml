@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # --- CONTENEDOR 1: Balanceador + Frontend ---
+  nginx_proxy:
+    build: ./frontend
+    container_name: frontend_lb
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend_a
+      - backend_b
+    networks:
+      - red_proyectos
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+
+  # --- CONTENEDOR 2: Backend A ---
+  backend_a:
+    build: ./backend
+    container_name: backend_nodo_a
+    restart: always
+    environment:
+      - DB_HOST=database
+      - DB_USER=admin_proyectos
+      - DB_PASSWORD=SQLpasswd123
+      - DB_NAME=GESTION_PROYECTOS
+      - SERVER_ID=Instancia_A
+      - PORT=3000
+    networks:
+      - red_proyectos
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+  # --- CONTENEDOR 3: Backend B ---
+  backend_b:
+    build: ./backend
+    container_name: backend_nodo_b
+    restart: always
+    environment:
+      - DB_HOST=database
+      - DB_USER=admin_proyectos
+      - DB_PASSWORD=SQLpasswd123
+      - DB_NAME=GESTION_PROYECTOS
+      - SERVER_ID=Instancia_B
+      - PORT=3000
+    networks:
+      - red_proyectos
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+  # --- CONTENEDOR 4: Base de Datos ---
+  database:
+    image: mariadb:10.6
+    container_name: db_mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: GESTION_PROYECTOS
+      MYSQL_USER: admin_proyectos
+      MYSQL_PASSWORD: SQLpasswd123
+      MYSQL_ROOT_PASSWORD: Sysadmin123
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database:/docker-entrypoint-initdb.d
+    networks:
+      - red_proyectos
+    ports:
+      - "3309:3306"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+
+volumes:
+  mysql_data:
+
+
+networks:
+  red_proyectos:
+    driver: bridge
